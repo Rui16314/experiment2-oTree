@@ -1,0 +1,10 @@
+
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <h2>Round {{n}} outcome</h2>
+    <p>You invested <strong>{{ r.x }}</strong>. The coin flip was <strong>{{ r.flip }}</strong>.</p>
+    <p>Your wealth for this round is <strong>{{ '%.2f'|format(r.wealth) }}</strong> points.</p>
+    <a class="btn primary" href="{{ next_url }}">Continue</a>
+  </div>
+{% endblock %}

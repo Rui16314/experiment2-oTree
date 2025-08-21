@@ -1,0 +1,16 @@
+
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    {% if open %}
+      <h2>Welcome</h2>
+      <p>You will complete 10 rounds of a simple decision problem about investing in a risky asset.</p>
+      <form method="post" action="{{ url_for('start') }}">
+        <button class="btn primary">Start</button>
+      </form>
+    {% else %}
+      <h2>Experiment Closed</h2>
+      <p>The coordinator has closed the experiment. Please check back later.</p>
+    {% endif %}
+  </div>
+{% endblock %}

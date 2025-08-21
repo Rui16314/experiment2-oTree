@@ -1,0 +1,35 @@
+
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <h2>Round {{n}} / 10</h2>
+    <p>Endowment: <strong>100 points</strong></p>
+    <p>Choose how much to invest in the risky asset (<em>x</em> between 0 and 100). You have up to 60 seconds.</p>
+    <form method="post" id="roundForm" class="form">
+      <input type="hidden" name="time_ms" id="time_ms" value="0">
+      <div class="sliderRow">
+        <input type="range" id="xRange" name="x" min="0" max="100" value="{{ prefill }}" oninput="xOut.value=this.value">
+        <output id="xOut">{{ prefill }}</output>
+      </div>
+      <div class="timer" id="timer">01:00</div>
+      <button class="btn primary" type="submit">Submit x</button>
+    </form>
+  </div>
+{% endblock %}
+{% block scripts %}
+<script>
+  let total = 60;
+  const timerEl = document.getElementById('timer');
+  const form = document.getElementById('roundForm');
+  const start = Date.now();
+  const iv = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - start)/1000);
+    const left = Math.max(0, total - elapsed);
+    const m = String(Math.floor(left/60)).padStart(2,'0');
+    const s = String(left%60).padStart(2,'0');
+    timerEl.textContent = m + ":" + s;
+    if (left <= 0) { clearInterval(iv); document.getElementById('time_ms').value = Date.now() - start; form.submit(); }
+  }, 200);
+  form.addEventListener('submit', () => { document.getElementById('time_ms').value = Date.now() - start; });
+</script>
+{% endblock %}

@@ -1,0 +1,12 @@
+
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <h2>General Instructions</h2>
+    <p>Welcome to the ECON 3310 Experiment Platform.</p>
+    <p>You will participate in <strong>10 rounds</strong> of simple decision problems. Each round should take about 1 minute or less.</p>
+    <p>Before the experiment begins, we randomly pick an integer in 1..10, called <strong>R</strong>. You won’t see it until the end. Your total points = your <strong>WEALTH</strong> in round R.</p>
+    <p>In each round you start with 100 points. Choose how much (<em>x</em>) to invest in a risky asset (0–100). A fair coin is flipped: Heads → the investment becomes 2.5x; Tails → it becomes 0. Your wealth that round is <strong>100 − x + 2.5x</strong> (heads) or <strong>100 − x</strong> (tails).</p>
+    <a class="btn primary" href="{{ url_for('round_page', n=1) }}">Begin</a>
+  </div>
+{% endblock %}
