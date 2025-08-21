@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <h2>General Instructions</h2>
+    <p>Welcome to the ECON 3310 Experiment Platform.</p>
+
+    <p>You will participate in <strong>10 rounds</strong> of simple decision problems. Each round should take about 1 minute or less. Overall, the whole process should take no more than 15 minutes, including reviewing the instructions.</p>
+
+    <p>Before the experiment begins, we randomly pick an integer number between 1 and 10 and denote it by <strong>R</strong>. This number is kept secret until the end of the experiment. The points you earn in this experiment will depend on your <strong>WEALTH</strong> in round <strong>R</strong>.</p>
+
+    <p>In each round, you start with an endowment of <strong>100 points</strong>. You will then choose how much of this endowment (<em>x</em>) to invest in a risky asset and how much to keep. You have 1 minute to decide. There is no right or wrong answer: choose a number that reflects your comfort with risk.</p>
+
+    <p>At each round, your remaining endowment <em>(100 − x)</em> is kept. Your investment <em>x</em> generates a random return determined by a fair coin flip:
+      if heads, your investment becomes <strong>2.5 × x</strong>; if tails, it becomes <strong>0</strong>. Therefore, your WEALTH in that round will be <strong>100 − x + 2.5x</strong> with probability ½ (heads) and <strong>100 − x</strong> with probability ½ (tails).</p>
+
+    <p>Returns are <strong>independent across rounds</strong>.</p>
+
+    <p>At the end of the 10th round, we reveal <strong>R</strong>. The points you earn in the experiment are your <strong>WEALTH</strong> in round <strong>R</strong>.</p>
+
+    <a class="btn primary" href="{{ url_for('round_page', n=1) }}">I understand — begin</a>
+  </div>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <h2>Welcome</h2>
+    <p>You will complete 10 rounds of a simple decision problem about investing in a risky asset. Please click Start when you’re ready.</p>
+    <form method="post" action="{{ url_for('start') }}">
+      <button class="btn primary">Start</button>
+    </form>
+  </div>
+{% endblock %}

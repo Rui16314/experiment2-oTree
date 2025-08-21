@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <h2>Short Survey</h2>
+    <form method="post" class="form">
+      <label>Gender</label>
+      <select name="gender" required>
+        <option value="">-- select --</option>
+        <option>Woman</option>
+        <option>Man</option>
+        <option>Other</option>
+        <option>Prefer not to say</option>
+      </select>
+
+      <label>Age</label>
+      <input type="number" name="age" min="16" max="100" required />
+
+      <label>Race</label>
+      <select name="race" required>
+        <option value="">-- select --</option>
+        <option>Asian</option>
+        <option>Black</option>
+        <option>Hispanic / Latinx</option>
+        <option>Indigenous</option>
+        <option>Middle Eastern / North African</option>
+        <option>White</option>
+        <option>Other</option>
+        <option>Prefer not to say</option>
+      </select>
+
+      <button class="btn primary" type="submit">Continue</button>
+    </form>
+  </div>
+{% endblock %}
