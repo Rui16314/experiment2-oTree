@@ -75,6 +75,14 @@ def ensure_state():
 with app.app_context():
     db.create_all()
     ensure_state()
+def run_simple_migrations():
+    """Add columns that might be missing from older deployments."""
+    insp = db.inspect(db.engine)
+    if "participants" in insp.get_table_names():
+        cols = {c["name"] for c in insp.get_columns("participants")}
+        with db.engine.begin() as conn:
+            if "name" not in cols:
+                conn.execute(text("ALTER TABLE participants ADD COLUMN name VARCHAR(80)"))
 
 # --------------- Helpers -------------------
 def require_pid():
