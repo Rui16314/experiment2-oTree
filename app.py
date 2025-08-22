@@ -373,76 +373,84 @@ def admin_export():
 
 @app.route("/admin/stats.json")
 def admin_stats_json():
-    """Aggregated stats for dashboard charts."""
+    """Aggregated stats based on each participant's average X (one record per person)."""
     require_admin()
 
-    decisions = []
-    for p in Participant.query.all():
-        for r in (p.rounds or []):
-            decisions.append(
-                {
-                    "pid": p.id,
-                    "name": p.name or p.id[:6],
-                    "gender": p.gender or "Unspecified",
-                    "age": p.age or None,
-                    "race": p.race or "Unspecified",
-                    "round": r.get("round"),
-                    "x": r.get("x", 0),
-                    "win": bool(r.get("win", (r.get("flip") == "heads"))),
-                    "wealth": r.get("wealth", 0.0),
-                }
-            )
+    parts = Participant.query.all()
 
-    # Histograms by bin size
+    # Average X for each participant (fallback to compute from rounds)
+    def avg_for(p):
+        if p.average_x is not None:
+            return float(p.average_x)
+        xs = [r.get("x", 0) for r in (p.rounds or []) if isinstance(r, dict)]
+        return (sum(xs) / len(xs)) if xs else 0.0
+
+    # Build per-participant records
+    records = []
+    for p in parts:
+        X = avg_for(p)
+        records.append({
+            "id": p.id,
+            "name": (p.name or p.id[:6]),
+            "gender": p.gender or "Unspecified",
+            "age": p.age,
+            "race": p.race or "Unspecified",
+            "X": X,
+        })
+
+    from collections import defaultdict
+
+    # Histograms of average X
     def hist_by_bin(bin_size):
-        from collections import defaultdict as DD
-
-        bins = DD(int)
-        for d in decisions:
-            b = (d["x"] // bin_size) * bin_size
-            key = f"{int(b)}–{int(b + bin_size - 1)}"
+        bins = defaultdict(int)
+        for r in records:
+            b = int(r["X"] // bin_size) * bin_size
+            key = f"{b}–{b + bin_size - 1}"
             bins[key] += 1
+        def low(k): return int(k.split("–")[0])
+        return [{"bin": k, "count": bins[k]} for k in sorted(bins, key=low)]
 
-        def low(k):  # sort by numeric lower bound
-            return int(k.split("–")[0])
-
-        return [{"bin": k, "count": bins[k]} for k in sorted(bins.keys(), key=low)]
-
-    # Average x by group helper
-    def avg_by(key):
-        sums, counts = {}, {}
-        for d in decisions:
-            g = d[key]
-            sums[g] = sums.get(g, 0) + d["x"]
-            counts[g] = counts.get(g, 0) + 1
+    # Average of average X by group
+    def avg_group(get_key):
+        sums, counts = defaultdict(float), defaultdict(int)
+        for r in records:
+            g = get_key(r)
+            sums[g] += r["X"]; counts[g] += 1
         groups = sorted(counts.keys())
         return [{"group": g, "avg_x": (sums[g] / counts[g]) if counts[g] else 0.0} for g in groups]
 
-    # Names per 10-pt interval
+    # Age buckets for grouping
+    def age_bucket(a):
+        if a is None: return "Unknown"
+        if a < 20: return "<20"
+        if a < 25: return "20–24"
+        if a < 30: return "25–29"
+        if a < 40: return "30–39"
+        return "40+"
+
+    avg_by_gender = avg_group(lambda r: r["gender"])
+    avg_by_age    = avg_group(lambda r: age_bucket(r["age"]))
+    avg_by_race   = avg_group(lambda r: r["race"])
+
+    # Names per 10-point interval (by average X)
     name_bins = defaultdict(list)
-    for d in decisions:
-        b = (d["x"] // 10) * 10
-        key = f"{int(b)}–{int(b + 9)}"
-        name_bins[key].append(d["name"])
-    names_by_bin = [
-        {"bin": k, "names": sorted(set(v))}
-        for k, v in sorted(name_bins.items(), key=lambda kv: int(kv[0].split("–")[0]))
-    ]
+    for r in records:
+        b = int(r["X"] // 10) * 10
+        key = f"{b}–{b + 9}"
+        name_bins[key].append(r["name"])
+    def low(k): return int(k.split("–")[0])
+    names_by_bin = [{"bin": k, "names": sorted(set(v))} for k, v in sorted(name_bins.items(), key=lambda kv: low(kv[0]))]
 
-    return jsonify(
-        {
-            "hist_5": hist_by_bin(5),
-            "hist_10": hist_by_bin(10),
-            "hist_20": hist_by_bin(20),
-            "avg_by_gender": avg_by("gender"),
-            "avg_by_age": avg_by("age"),   # bucketed on the frontend if desired
-            "avg_by_race": avg_by("race"),
-            "names_by_bin_10": names_by_bin,
-            "decision_count": len(decisions),
-            "participant_count": Participant.query.count(),
-        }
-    )
-
+    return jsonify({
+        "hist_5":  hist_by_bin(5),
+        "hist_10": hist_by_bin(10),
+        "hist_20": hist_by_bin(20),
+        "avg_by_gender": avg_by_gender,
+        "avg_by_age":    avg_by_age,
+        "avg_by_race":   avg_by_race,
+        "names_by_bin_10": names_by_bin,
+        "participant_count": len(records),
+    })
 
 # ---------------- Health ----------------
 @app.route("/health")
