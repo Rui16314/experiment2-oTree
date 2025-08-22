@@ -1,9 +1,22 @@
-<h2>Round {{n}} outcome</h2>
-<p>You invested <strong>{{ r.x }}</strong>.</p>
-{% if r.flip == 'heads' %}
-  <p><strong>You won this round.</strong></p>
-{% else %}
-  <p><strong>You did not win this round.</strong></p>
-{% endif %}
-<p>Your wealth for this round is <strong>{{ '%.2f'|format(r.wealth) }}</strong> points.</p>
-<a class="btn primary" href="{{ next_url }}">Continue</a>
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <h2>Round {{n}} outcome</h2>
+
+    <p>You invested <strong>{{ r.x }}</strong>.</p>
+
+    {% set won = r.get('win', (r.get('flip') == 'heads')) %}
+    {% if won %}
+      <p><strong>You won this round.</strong></p>
+    {% else %}
+      <p><strong>You did not win this round.</strong></p>
+    {% endif %}
+
+    <p>Your wealth for this round is <strong>{{ '%.2f'|format(r.wealth) }}</strong> points.</p>
+
+    <div style="display:flex; gap:10px; margin-top:10px;">
+      <a class="btn" href="{{ url_for('restart') }}">Restart</a>
+      <a class="btn primary" href="{{ next_url }}">Continue</a>
+    </div>
+  </div>
+{% endblock %}
