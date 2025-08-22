@@ -23,7 +23,7 @@
 
   <div class="card" style="margin-top:16px;">
     <h3>Visualizations</h3>
-    <p>These charts update as participants submit decisions.</p>
+    <p>Each chart uses <strong>each participant’s average X</strong> (one point per person).</p>
 
     <div class="grid2">
       <div class="chartBox"><canvas id="hist5"></canvas></div>
@@ -38,8 +38,11 @@
       <div class="chartBox"><canvas id="avgRace"></canvas></div>
     </div>
 
-    <h4>Names per 10-point interval</h4>
-    <pre id="namesBin" class="pre"></pre>
+    <h4>Names per 10-point interval (by average X)</h4>
+    <table class="table" id="namesTable">
+      <thead><tr><th>Interval</th><th>Names</th></tr></thead>
+      <tbody></tbody>
+    </table>
   </div>
 {% endblock %}
 
@@ -54,82 +57,65 @@ async function loadStats() {
 
   const byBin = (arr) => ({ labels: arr.map(d => d.bin), data: arr.map(d => d.count) });
 
-  const gridColor  = 'rgba(148,163,184,0.18)'; // slate-400 @ ~18%
-  const tickColor  = '#cbd5e1';                // slate-300
-  const titleColor = '#e5e7eb';                // slate-200
+  const gridColor  = 'rgba(148,163,184,0.18)';
+  const tickColor  = '#cbd5e1';
+  const titleColor = '#e5e7eb';
 
   function makeBar(id, labels, data, chartTitle, xLabel, yLabel) {
-    const ctx = document.getElementById(id).getContext('2d');
-    new Chart(ctx, {
+    new Chart(document.getElementById(id), {
       type: 'bar',
-      data: {
-        labels,
-        datasets: [{ label: chartTitle, data, borderWidth: 1 }]
-      },
+      data: { labels, datasets: [{ label: chartTitle, data, borderWidth: 1 }] },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
+        responsive: true, maintainAspectRatio: false, animation: false,
         plugins: {
           legend: { display: false },
-          title:  { display: true, text: chartTitle, color: titleColor, font: { size: 16, weight: 'bold' } },
-          tooltip: { callbacks: { label: (ctx) => `${ctx.formattedValue}` } }
+          title: { display: true, text: chartTitle, color: titleColor, font: { size: 16, weight: 'bold' } }
         },
         scales: {
-          x: {
-            title: { display: true, text: xLabel, color: titleColor, font: { weight: '600' } },
-            ticks: { color: tickColor },
-            grid:  { color: gridColor }
-          },
-          y: {
-            beginAtZero: true,
-            title: { display: true, text: yLabel, color: titleColor, font: { weight: '600' } },
-            ticks: { color: tickColor },
-            grid:  { color: gridColor }
-          }
+          x: { title: { display: true, text: xLabel, color: titleColor, font: { weight: '600' } },
+               ticks: { color: tickColor }, grid: { color: gridColor } },
+          y: { beginAtZero: true,
+               title: { display: true, text: yLabel, color: titleColor, font: { weight: '600' } },
+               ticks: { color: tickColor }, grid: { color: gridColor } }
         }
       }
     });
   }
 
-  // Histograms (counts)
+  // Histograms of average X (counts of participants)
   const h5  = byBin(s.hist_5);
   const h10 = byBin(s.hist_10);
   const h20 = byBin(s.hist_20);
-  makeBar('hist5',  h5.labels,  h5.data,  'Histogram of x (bin = 5)',  'Investment x (bin width = 5)',  'Number of decisions');
-  makeBar('hist10', h10.labels, h10.data, 'Histogram of x (bin = 10)', 'Investment x (bin width = 10)', 'Number of decisions');
-  makeBar('hist20', h20.labels, h20.data, 'Histogram of x (bin = 20)', 'Investment x (bin width = 20)', 'Number of decisions');
+  makeBar('hist5',  h5.labels,  h5.data,  'Histogram of average X (bin = 5)',  'Average X (bin width = 5)',  'Number of participants');
+  makeBar('hist10', h10.labels, h10.data, 'Histogram of average X (bin = 10)', 'Average X (bin width = 10)', 'Number of participants');
+  makeBar('hist20', h20.labels, h20.data, 'Histogram of average X (bin = 20)', 'Average X (bin width = 20)', 'Number of participants');
 
-  // Averages
+  // Group averages (average of average X)
   makeBar('avgGender',
           s.avg_by_gender.map(d => d.group),
           s.avg_by_gender.map(d => d.avg_x),
-          'Average x by gender',
-          'Gender',
-          'Average x');
+          'Average of average X by gender', 'Gender', 'Average X');
 
   makeBar('avgAge',
           s.avg_by_age.map(d => d.group),
           s.avg_by_age.map(d => d.avg_x),
-          'Average x by age group',
-          'Age group',
-          'Average x');
+          'Average of average X by age group', 'Age group', 'Average X');
 
   makeBar('avgRace',
           s.avg_by_race.map(d => d.group),
           s.avg_by_race.map(d => d.avg_x),
-          'Average x by race',
-          'Race',
-          'Average x');
+          'Average of average X by race', 'Race', 'Average X');
 
-  // Names list
-  const names = s.names_by_bin_10.map(d => `${d.bin}: ${d.names.join(", ")}`).join("\\n");
-  document.getElementById('namesBin').textContent = names || "No data yet";
+  // Names table (one row per interval)
+  const tbody = document.querySelector('#namesTable tbody');
+  tbody.innerHTML = s.names_by_bin_10.map(d =>
+    `<tr><td>${d.bin}</td><td>${d.names.join(', ')}</td></tr>`
+  ).join('');
 }
 loadStats();
 </script>
 <style>
-/* Give canvases a fixed height so axes/titles have room */
-.chartBox { height: 280px; }
+.chartBox { height: 280px; } /* breathing room for axes/titles */
 </style>
 {% endblock %}
+
