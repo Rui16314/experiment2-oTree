@@ -1,16 +1,21 @@
-
 {% extends "base.html" %}
 {% block content %}
   <div class="card">
     <h2>Coordinator Dashboard</h2>
-    <p><strong>Status:</strong> {{ "Open" if state.is_open else "Closed" }} | Participants: {{ counts.participants }} | Decisions: {{ counts.decisions }}</p>
+    <p><strong>Status:</strong> {{ "Open" if state.is_open else "Closed" }} |
+       Participants: {{ counts.participants }} |
+       Decisions: {{ counts.decisions }}</p>
+
     <form method="post" action="{{ url_for('admin_state') }}" style="display:inline-block; margin-right:8px;">
       <input type="hidden" name="key" value="{{ key }}">
       <button class="btn {% if state.is_open %}{% else %}primary{% endif %}" name="action" value="open">Open</button>
       <button class="btn {% if state.is_open %}primary{% else %}{% endif %}" name="action" value="close">Close</button>
     </form>
+
     <a class="btn" href="{{ url_for('admin_export', key=key) }}">Download CSV</a>
-    <form method="post" action="{{ url_for('admin_reset') }}" style="display:inline-block; margin-left:8px;" onsubmit="return confirm('Delete all participant data?');">
+
+    <form method="post" action="{{ url_for('admin_reset') }}" style="display:inline-block; margin-left:8px;"
+          onsubmit="return confirm('Delete all participant data?');">
       <input type="hidden" name="key" value="{{ key }}">
       <button class="btn">Reset Data</button>
     </form>
@@ -19,18 +24,20 @@
   <div class="card" style="margin-top:16px;">
     <h3>Visualizations</h3>
     <p>These charts update as participants submit decisions.</p>
+
     <div class="grid2">
-      <canvas id="hist5"></canvas>
-      <canvas id="hist10"></canvas>
+      <div class="chartBox"><canvas id="hist5"></canvas></div>
+      <div class="chartBox"><canvas id="hist10"></canvas></div>
     </div>
     <div class="grid2">
-      <canvas id="hist20"></canvas>
-      <canvas id="avgGender"></canvas>
+      <div class="chartBox"><canvas id="hist20"></canvas></div>
+      <div class="chartBox"><canvas id="avgGender"></canvas></div>
     </div>
     <div class="grid2">
-      <canvas id="avgAge"></canvas>
-      <canvas id="avgRace"></canvas>
+      <div class="chartBox"><canvas id="avgAge"></canvas></div>
+      <div class="chartBox"><canvas id="avgRace"></canvas></div>
     </div>
+
     <h4>Names per 10-point interval</h4>
     <pre id="namesBin" class="pre"></pre>
   </div>
@@ -47,25 +54,82 @@ async function loadStats() {
 
   const byBin = (arr) => ({ labels: arr.map(d => d.bin), data: arr.map(d => d.count) });
 
-  const makeBar = (id, labels, data, title) => {
-    new Chart(document.getElementById(id), {
+  const gridColor  = 'rgba(148,163,184,0.18)'; // slate-400 @ ~18%
+  const tickColor  = '#cbd5e1';                // slate-300
+  const titleColor = '#e5e7eb';                // slate-200
+
+  function makeBar(id, labels, data, chartTitle, xLabel, yLabel) {
+    const ctx = document.getElementById(id).getContext('2d');
+    new Chart(ctx, {
       type: 'bar',
-      data: { labels, datasets: [{ label: title, data }] },
-      options: { responsive: true, plugins: { legend: { display: false } } }
+      data: {
+        labels,
+        datasets: [{ label: chartTitle, data, borderWidth: 1 }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: {
+          legend: { display: false },
+          title:  { display: true, text: chartTitle, color: titleColor, font: { size: 16, weight: 'bold' } },
+          tooltip: { callbacks: { label: (ctx) => `${ctx.formattedValue}` } }
+        },
+        scales: {
+          x: {
+            title: { display: true, text: xLabel, color: titleColor, font: { weight: '600' } },
+            ticks: { color: tickColor },
+            grid:  { color: gridColor }
+          },
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: yLabel, color: titleColor, font: { weight: '600' } },
+            ticks: { color: tickColor },
+            grid:  { color: gridColor }
+          }
+        }
+      }
     });
-  };
+  }
 
-  const h5 = byBin(s.hist_5);   makeBar('hist5', h5.labels, h5.data, 'Counts (bin=5)');
-  const h10 = byBin(s.hist_10); makeBar('hist10', h10.labels, h10.data, 'Counts (bin=10)');
-  const h20 = byBin(s.hist_20); makeBar('hist20', h20.labels, h20.data, 'Counts (bin=20)');
+  // Histograms (counts)
+  const h5  = byBin(s.hist_5);
+  const h10 = byBin(s.hist_10);
+  const h20 = byBin(s.hist_20);
+  makeBar('hist5',  h5.labels,  h5.data,  'Histogram of x (bin = 5)',  'Investment x (bin width = 5)',  'Number of decisions');
+  makeBar('hist10', h10.labels, h10.data, 'Histogram of x (bin = 10)', 'Investment x (bin width = 10)', 'Number of decisions');
+  makeBar('hist20', h20.labels, h20.data, 'Histogram of x (bin = 20)', 'Investment x (bin width = 20)', 'Number of decisions');
 
-  makeBar('avgGender', s.avg_by_gender.map(d=>d.group), s.avg_by_gender.map(d=>d.avg_x), 'Average x by gender');
-  makeBar('avgAge',    s.avg_by_age.map(d=>d.group),    s.avg_by_age.map(d=>d.avg_x),    'Average x by age');
-  makeBar('avgRace',   s.avg_by_race.map(d=>d.group),   s.avg_by_race.map(d=>d.avg_x),   'Average x by race');
+  // Averages
+  makeBar('avgGender',
+          s.avg_by_gender.map(d => d.group),
+          s.avg_by_gender.map(d => d.avg_x),
+          'Average x by gender',
+          'Gender',
+          'Average x');
 
-  const names = s.names_by_bin_10.map(d => `${d.bin}: ${d.names.join(", ")}`).join("\n");
+  makeBar('avgAge',
+          s.avg_by_age.map(d => d.group),
+          s.avg_by_age.map(d => d.avg_x),
+          'Average x by age group',
+          'Age group',
+          'Average x');
+
+  makeBar('avgRace',
+          s.avg_by_race.map(d => d.group),
+          s.avg_by_race.map(d => d.avg_x),
+          'Average x by race',
+          'Race',
+          'Average x');
+
+  // Names list
+  const names = s.names_by_bin_10.map(d => `${d.bin}: ${d.names.join(", ")}`).join("\\n");
   document.getElementById('namesBin').textContent = names || "No data yet";
 }
 loadStats();
 </script>
+<style>
+/* Give canvases a fixed height so axes/titles have room */
+.chartBox { height: 280px; }
+</style>
 {% endblock %}
