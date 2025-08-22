@@ -14,9 +14,7 @@
 
     <p>Your wealth for this round is <strong>{{ '%.2f'|format(r.wealth) }}</strong> points.</p>
 
-    <div style="display:flex; gap:10px; margin-top:10px;">
-      <a class="btn" href="{{ url_for('restart') }}">Restart</a>
-      <a class="btn primary" href="{{ next_url }}">Continue</a>
-    </div>
+    <a class="btn primary" href="{{ next_url }}">Continue</a>
   </div>
 {% endblock %}
+
